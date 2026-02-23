@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Admin Portal</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Roboto', 'sans-serif'],
+                        condensed: ['"Barlow Condensed"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        body { font-family: 'Roboto', sans-serif; background-color: #f3f4f6; }
+        .font-condensed { font-family: 'Barlow Condensed', sans-serif; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        /* Highly Visible Admin Inputs */
+        .form-input {
+            @apply block w-full rounded border-2 border-gray-400 bg-gray-50 shadow-sm focus:border-black focus:bg-white focus:ring-0 text-sm p-2 transition-colors text-black outline-none;
+        }
+        .form-label {
+            @apply block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1;
+        }
+        
+        /* Dynamic Theme Variables */
+        :root {
+            --team-primary: #115740;
+            --team-secondary: #F0B323;
+            --team-bg: #ffffff;
+            --team-card-bg: #f9fafb;
+            --team-text: #1f2937;
+        }
+        
+        /* Utility classes linking to custom properties */
+        .theme-primary-bg { background-color: var(--team-primary); }
+        .theme-primary-text { color: var(--team-primary); }
+        .theme-primary-border { border-color: var(--team-primary); }
+        
+        .theme-secondary-bg { background-color: var(--team-secondary); }
+        .theme-secondary-text { color: var(--team-secondary); }
+        
+        /* Site Preview Variables */
+        #preview-area {
+            background-color: var(--team-bg);
+            color: var(--team-text);
+        }
+        .theme-card {
+            background-color: var(--team-card-bg);
+            border: 1px solid color-mix(in srgb, var(--team-text) 15%, transparent);
+        }
+        .theme-sub-text {
+            color: color-mix(in srgb, var(--team-text) 70%, transparent);
+        }
+        .theme-border {
+            border-color: color-mix(in srgb, var(--team-text) 15%, transparent);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Admin Header -->
+    <div class="bg-gray-900 text-white shadow-lg z-50 flex-shrink-0">
+        <div class="flex justify-between items-center h-16 px-6">
+            <div class="flex items-center space-x-4">
+                <div class="w-8 h-8 bg-white text-gray-900 flex items-center justify-center font-bold text-lg rounded">A</div>
+                <div>
+                    <h1 class="font-condensed font-bold text-xl uppercase tracking-wider">Admin Portal</h1>
+                    <p class="text-xs text-gray-400">Content Management System</p>
+                </div>
+                
+                <!-- Navigation Tabs (Admin Mode) -->
+                <div class="ml-10 flex space-x-1 bg-gray-800 p-1 rounded-lg" id="admin-nav">
+                    <button onclick="setSection('settings')" id="btn-settings" class="nav-btn px-4 py-1.5 rounded-md text-sm font-bold uppercase transition-colors text-gray-400 hover:text-white hover:bg-gray-700">Settings</button>
+                    <button onclick="setSection('schedule')" id="btn-schedule" class="nav-btn px-4 py-1.5 rounded-md text-sm font-bold uppercase transition-colors bg-white text-gray-900 shadow-sm">Schedule</button>
+                    <button onclick="setSection('roster')" id="btn-roster" class="nav-btn px-4 py-1.5 rounded-md text-sm font-bold uppercase transition-colors text-gray-400 hover:text-white hover:bg-gray-700">Roster</button>
+                    <button onclick="setSection('news')" id="btn-news" class="nav-btn px-4 py-1.5 rounded-md text-sm font-bold uppercase transition-colors text-gray-400 hover:text-white hover:bg-gray-700">News</button>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-6">
+                <!-- Save/Load -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="saveData()" class="text-gray-400 hover:text-white text-xs uppercase font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i> Save JSON</button>
+                    <label class="cursor-pointer text-gray-400 hover:text-white text-xs uppercase font-bold">
+                        <i class="fa-solid fa-upload mr-1"></i> Load JSON
+                        <input type="file" class="hidden" onchange="loadData(this)">
+                    </label>
+                </div>
+
+                <!-- View Toggle -->
+                <div class="flex items-center bg-black bg-opacity-50 rounded-full p-1 pl-3 pr-1 border border-gray-700">
+                    <span class="text-xs font-bold uppercase mr-3 text-gray-300">Preview:</span>
+                    <button onclick="togglePreview(false)" id="mode-edit" class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-white text-black shadow-sm">Editor</button>
+                    <button onclick="togglePreview(true)" id="mode-preview" class="px-3 py-1 rounded-full text-xs font-bold uppercase text-gray-400 hover:text-white">Live Site</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN WORKSPACE -->
+    <div class="flex-grow flex overflow-hidden relative">
+        
+        <!-- EDITOR AREA -->
+        <div id="editor-area" class="w-full h-full overflow-y-auto bg-gray-100 p-8 pb-32">
+            
+            <!-- SETTINGS EDITOR -->
+            <div id="editor-settings" class="hidden max-w-4xl mx-auto space-y-6">
+                 <div class="flex justify-between items-center border-b border-gray-300 pb-4">
+                    <h2 class="text-3xl font-condensed font-bold text-gray-800 uppercase"><i class="fa-solid fa-sliders mr-2"></i> Site Settings & Branding</h2>
+                </div>
+                
+                <div class="bg-white p-6 rounded shadow border border-gray-300 space-y-6">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="col-span-2 md:col-span-1">
+                            <label class="form-label">Team Name / Sport</label>
+                            <input type="text" class="form-input" id="set_name" onchange="updateSettings('name', this.value)" placeholder="e.g. Women's Lacrosse">
+                        </div>
+                        <div class="col-span-2 md:col-span-1">
+                            <label class="form-label">Team Initials (For Default Logo)</label>
+                            <input type="text" class="form-input uppercase" id="set_initials" onchange="updateSettings('initials', this.value)" placeholder="W&M">
+                        </div>
+                    </div>
+                    
+                    <h3 class="font-bold text-gray-800 border-b border-gray-200 pb-2 mt-4">Brand Colors</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="form-label">Primary Color (Hex)</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" class="form-input h-10 w-12 p-0 cursor-pointer" id="set_col_primary_picker" onchange="syncColor('primary', this.value)">
+                                <input type="text" class="form-input font-mono uppercase" id="set_col_primary_text" onchange="syncColor('primary', this.value)">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Secondary Color (Hex)</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" class="form-input h-10 w-12 p-0 cursor-pointer" id="set_col_secondary_picker" onchange="syncColor('secondary', this.value)">
+                                <input type="text" class="form-input font-mono uppercase" id="set_col_secondary_text" onchange="syncColor('secondary', this.value)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="font-bold text-gray-800 border-b border-gray-200 pb-2 mt-4">Site Background Colors (Light/Dark Mode)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="form-label">Main Background</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" class="form-input h-10 w-12 p-0 cursor-pointer" id="set_col_bg_picker" onchange="syncColor('bg', this.value)">
+                                <input type="text" class="form-input font-mono uppercase" id="set_col_bg_text" onchange="syncColor('bg', this.value)">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Content/Card Background</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" class="form-input h-10 w-12 p-0 cursor-pointer" id="set_col_cardBg_picker" onchange="syncColor('cardBg', this.value)">
+                                <input type="text" class="form-input font-mono uppercase" id="set_col_cardBg_text" onchange="syncColor('cardBg', this.value)">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Main Text Color</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" class="form-input h-10 w-12 p-0 cursor-pointer" id="set_col_text_picker" onchange="syncColor('text', this.value)">
+                                <input type="text" class="form-input font-mono uppercase" id="set_col_text_text" onchange="syncColor('text', this.value)">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCHEDULE EDITOR -->
+            <div id="editor-schedule" class="max-w-5xl mx-auto space-y-6">
+                <div class="flex justify-between items-center border-b border-gray-300 pb-4">
+                    <h2 class="text-3xl font-condensed font-bold text-gray-800 uppercase"><i class="fa-solid fa-calendar-days mr-2"></i> Manage Schedule</h2>
+                    <button onclick="addGame()" class="bg-gray-800 hover:bg-black text-white px-4 py-2 rounded shadow flex items-center gap-2 font-bold text-sm transition-transform active:scale-95">
+                        <i class="fa-solid fa-plus"></i> Add Game
+                    </button>
+                </div>
+
+                <div id="game-list" class="space-y-6">
+                    <!-- Game Cards Injected Here -->
+                </div>
+            </div>
+
+            <!-- ROSTER EDITOR -->
+            <div id="editor-roster" class="hidden max-w-5xl mx-auto space-y-6">
+                <div class="flex justify-between items-center border-b border-gray-300 pb-4">
+                    <h2 class="text-3xl font-condensed font-bold text-gray-800 uppercase"><i class="fa-solid fa-users mr-2"></i> Manage Roster</h2>
+                    <button onclick="addPlayer()" class="bg-gray-800 hover:bg-black text-white px-4 py-2 rounded shadow flex items-center gap-2 font-bold text-sm transition-transform active:scale-95">
+                        <i class="fa-solid fa-user-plus"></i> Add Player
+                    </button>
+                </div>
+
+                <div id="player-list" class="grid grid-cols-1 gap-4">
+                    <!-- Player Cards Injected Here -->
+                </div>
+            </div>
+
+            <!-- NEWS EDITOR -->
+            <div id="editor-news" class="hidden max-w-5xl mx-auto space-y-6">
+                 <div class="flex justify-between items-center border-b border-gray-300 pb-4">
+                    <h2 class="text-3xl font-condensed font-bold text-gray-800 uppercase"><i class="fa-solid fa-newspaper mr-2"></i> Manage News</h2>
+                    <button onclick="addNews()" class="bg-gray-800 hover:bg-black text-white px-4 py-2 rounded shadow flex items-center gap-2 font-bold text-sm transition-transform active:scale-95">
+                        <i class="fa-solid fa-plus"></i> Add Story
+                    </button>
+                </div>
+
+                <div id="news-list" class="space-y-6">
+                    <!-- News Cards Injected Here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- PREVIEW AREA (The "Live Site") -->
+        <div id="preview-area" class="hidden w-full h-full overflow-y-auto transition-colors duration-300">
+            <!-- Simulated Public Site Header -->
+            <div class="theme-card border-b sticky top-0 z-30 transition-colors duration-300">
+                <div class="theme-primary-bg h-2 w-full transition-colors duration-300"></div>
+                <div class="container mx-auto px-6 py-4">
+                    <div class="flex items-center gap-4 mb-4">
+                         <!-- Dynamic Logo -->
+                        <div class="w-12 h-12 theme-secondary-bg theme-primary-text flex items-center justify-center font-bold text-xl rounded transition-colors duration-300 shadow-sm" id="preview-logo">W&M</div>
+                        <div>
+                            <h1 class="font-condensed font-bold text-4xl theme-primary-text uppercase leading-none transition-colors duration-300" id="preview-team-name">Women's Lacrosse</h1>
+                        </div>
+                    </div>
+                    
+                    <!-- Functional Sub-Nav -->
+                    <div class="flex gap-6 text-sm font-bold uppercase tracking-wide theme-border border-t pt-2 theme-sub-text" id="preview-nav-links">
+                        <button onclick="switchPreviewTab('schedule')" id="pv-tab-schedule" class="hover:opacity-75 pb-1 border-b-2 border-transparent transition-all theme-primary-text theme-primary-border">Schedule</button>
+                        <button onclick="switchPreviewTab('roster')" id="pv-tab-roster" class="hover:opacity-75 pb-1 border-b-2 border-transparent transition-all">Roster</button>
+                        <button onclick="switchPreviewTab('news')" id="pv-tab-news" class="hover:opacity-75 pb-1 border-b-2 border-transparent transition-all">News</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container mx-auto px-6 py-8">
+                <!-- Preview Content Injected Here -->
+                <div id="preview-content"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        // --- DATA STATE ---
+        let state = {
+            settings: {
+                name: "Women's Lacrosse",
+                initials: "W&M",
+                primary: "#115740",
+                secondary: "#F0B323",
+                bg: "#f3f4f6",       // Default site background
+                cardBg: "#ffffff",   // Default content background
+                text: "#1f2937"      // Default main text color
+            },
+            games: [],
+            players: [],
+            news: []
+        };
+
+        // --- UI STATE ---
+        let currentSection = 'schedule';
+        let previewTab = 'schedule';
+        let previewDetail = null; // object like { type: 'player', id: 123 }
+        let isPreview = false;
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            // Load dummy data if empty
+            if(state.games.length === 0) {
+                state.games.push({
+                    id: 1, date: "Feb 10", time: "2 PM", atVs: "at", opponent: "George Washington", 
+                    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/George_Washington_Revolutionaries_logo.svg/1200px-George_Washington_Revolutionaries_logo.svg.png", 
+                    location: "Washington, D.C.", promo: "Season Opener", 
+                    scoreHome: "", scoreAway: "", recap: "The team fought hard in the season opener...", linkText: "History", linkUrl: "#"
+                });
+            }
+            if(state.players.length === 0) {
+                state.players.push({
+                    id: 2, num: "14", name: "Jane Doe", pos: "MID", ht: "5-6", yr: "Jr.", hometown: "Annapolis, MD", img: "", bio: "Jane is entering her junior year after a breakout sophomore season..."
+                });
+            }
+            if(state.news.length === 0) {
+                state.news.push({
+                    id: 101, date: "Feb 08, 2026", title: "Tribe Predicted to Finish Top of Conference", 
+                    image: "https://images.unsplash.com/photo-1595210382266-2d0077c1f541?auto=format&fit=crop&q=80&w=800",
+                    summary: "The preseason poll has been released and the Tribe are sitting in the number one spot."
+                });
+            }
+            applyTheme();
+            updateSettingsUI();
+            renderEditor();
+        };
+
+        // --- THEME & SETTINGS ---
+        function updateSettings(field, value) {
+            state.settings[field] = value;
+        }
+
+        function syncColor(type, value) {
+            state.settings[type] = value;
+            document.getElementById(`set_col_${type}_picker`).value = value;
+            document.getElementById(`set_col_${type}_text`).value = value;
+            applyTheme();
+        }
+
+        function applyTheme() {
+            const root = document.documentElement;
+            root.style.setProperty('--team-primary', state.settings.primary);
+            root.style.setProperty('--team-secondary', state.settings.secondary);
+            root.style.setProperty('--team-bg', state.settings.bg);
+            root.style.setProperty('--team-card-bg', state.settings.cardBg);
+            root.style.setProperty('--team-text', state.settings.text);
+        }
+
+        function updateSettingsUI() {
+            document.getElementById('set_name').value = state.settings.name;
+            document.getElementById('set_initials').value = state.settings.initials;
+            
+            ['primary', 'secondary', 'bg', 'cardBg', 'text'].forEach(type => {
+                const val = state.settings[type];
+                document.getElementById(`set_col_${type}_picker`).value = val;
+                document.getElementById(`set_col_${type}_text`).value = val;
+            });
+        }
+
+        // --- NAVIGATION ---
+        function setSection(sec) {
+            try {
+                currentSection = sec;
+                
+                // Update Admin Nav Buttons
+                document.querySelectorAll('#admin-nav .nav-btn').forEach(btn => {
+                    btn.className = "nav-btn px-4 py-1.5 rounded-md text-sm font-bold uppercase transition-colors text-gray-400 hover:text-white hover:bg-gray-700";
+                });
+                const activeBtn = document.getElementById(`btn-${sec}`);
+                if(activeBtn) activeBtn.className = "nav-btn px-4 py-1.5 rounded-md text-sm font-bold uppercase transition-colors bg-white text-gray-900 shadow-sm";
+
+                // Show Selected Editor
+                ['settings', 'schedule', 'roster', 'news'].forEach(s => {
+                    document.getElementById(`editor-${s}`).classList.add('hidden');
+                });
+                document.getElementById(`editor-${sec}`).classList.remove('hidden');
+
+                renderEditor();
+            } catch (e) {
+                console.error("Error switching admin section:", e);
+            }
+        }
+
+        function togglePreview(showPreview) {
+            isPreview = showPreview;
+            const editorArea = document.getElementById('editor-area');
+            const previewArea = document.getElementById('preview-area');
+            const btnEdit = document.getElementById('mode-edit');
+            const btnPrev = document.getElementById('mode-preview');
+
+            if(showPreview) {
+                document.getElementById('preview-team-name').innerText = state.settings.name;
+                document.getElementById('preview-logo').innerText = state.settings.initials;
+                previewDetail = null; // reset to list view on toggle
+
+                renderPreview();
+                editorArea.classList.add('hidden');
+                previewArea.classList.remove('hidden');
+                
+                btnEdit.className = "px-3 py-1 rounded-full text-xs font-bold uppercase text-gray-400 hover:text-white";
+                btnPrev.className = "px-3 py-1 rounded-full text-xs font-bold uppercase bg-white text-black shadow-sm";
+            } else {
+                previewArea.classList.add('hidden');
+                editorArea.classList.remove('hidden');
+
+                btnEdit.className = "px-3 py-1 rounded-full text-xs font-bold uppercase bg-white text-black shadow-sm";
+                btnPrev.className = "px-3 py-1 rounded-full text-xs font-bold uppercase text-gray-400 hover:text-white";
+                
+                renderEditor(); 
+            }
+        }
+
+        function switchPreviewTab(tab) {
+            previewTab = tab;
+            previewDetail = null; // Clear detail view when switching tabs
+            
+            // Update styles for preview nav (Handling custom colors)
+            ['schedule', 'roster', 'news'].forEach(t => {
+                const el = document.getElementById(`pv-tab-${t}`);
+                if(t === tab) {
+                    el.classList.add('theme-primary-text', 'theme-primary-border');
+                    el.classList.remove('border-transparent');
+                } else {
+                    el.classList.remove('theme-primary-text', 'theme-primary-border');
+                    el.classList.add('border-transparent');
+                }
+            });
+
+            renderPreview();
+        }
+
+        function viewDetail(type, id) {
+            previewDetail = { type, id };
+            renderPreview();
+        }
+
+        function closeDetail() {
+            previewDetail = null;
+            renderPreview();
+        }
+
+        // --- DATA CRUD ---
+        
+        // Games
+        function addGame() {
+            state.games.push({ id: Date.now(), date: "", time: "", atVs: "vs", opponent: "", logo: "", location: "", promo: "", scoreHome: "", scoreAway: "", recap: "", linkText: "", linkUrl: "" });
+            renderEditor();
+        }
+        function updateGame(id, field, value) {
+            const item = state.games.find(g => g.id === id);
+            if(item) item[field] = value;
+        }
+        function removeGame(id) {
+            if(confirm("Delete this game?")) { state.games = state.games.filter(g => g.id !== id); renderEditor(); }
+        }
+
+        // Players
+        function addPlayer() {
+            state.players.push({ id: Date.now(), num: "", name: "", pos: "", ht: "", yr: "", hometown: "", img: "", bio: "" });
+            renderEditor();
+        }
+        function updatePlayer(id, field, value) {
+            const item = state.players.find(p => p.id === id);
+            if(item) item[field] = value;
+        }
+        function removePlayer(id) {
+            if(confirm("Delete this player?")) { state.players = state.players.filter(p => p.id !== id); renderEditor(); }
+        }
+
+        // News
+        function addNews() {
+            state.news.push({ id: Date.now(), date: "", title: "", image: "", summary: "" });
+            renderEditor();
+        }
+        function updateNews(id, field, value) {
+             const item = state.news.find(n => n.id === id);
+             if(item) item[field] = value;
+        }
+        function removeNews(id) {
+            if(confirm("Delete this story?")) { state.news = state.news.filter(n => n.id !== id); renderEditor(); }
+        }
+
+        // --- RENDER EDITOR ---
+        function renderEditor() {
+            // Roster
+            document.getElementById('player-list').innerHTML = state.players.map(p => `
+                 <div class="bg-white rounded border border-gray-300 shadow-sm p-4 relative flex flex-col md:flex-row items-start gap-4">
+                    <button onclick="removePlayer(${p.id})" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 p-2"><i class="fa-solid fa-trash"></i></button>
+                    
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex-shrink-0 overflow-hidden border-2 border-gray-400 flex items-center justify-center mt-6">
+                        ${p.img ? `<img src="${p.img}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-gray-400 text-2xl"></i>`}
+                    </div>
+                    
+                    <div class="flex-grow grid grid-cols-12 gap-3 w-full">
+                         <div class="col-span-12 md:col-span-2"><label class="form-label">No.</label><input type="text" class="form-input text-center font-bold" value="${p.num}" onchange="updatePlayer(${p.id}, 'num', this.value)"></div>
+                         <div class="col-span-12 md:col-span-4"><label class="form-label">Name</label><input type="text" class="form-input font-bold" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)"></div>
+                         <div class="col-span-12 md:col-span-2"><label class="form-label">Pos</label><input type="text" class="form-input" value="${p.pos}" onchange="updatePlayer(${p.id}, 'pos', this.value)"></div>
+                         <div class="col-span-12 md:col-span-2"><label class="form-label">Ht</label><input type="text" class="form-input" value="${p.ht}" onchange="updatePlayer(${p.id}, 'ht', this.value)"></div>
+                         <div class="col-span-12 md:col-span-2"><label class="form-label">Yr</label><input type="text" class="form-input" value="${p.yr}" onchange="updatePlayer(${p.id}, 'yr', this.value)"></div>
+                         <div class="col-span-12 md:col-span-6"><label class="form-label">Hometown / High School</label><input type="text" class="form-input" value="${p.hometown}" onchange="updatePlayer(${p.id}, 'hometown', this.value)"></div>
+                         <div class="col-span-12 md:col-span-6"><label class="form-label">Photo URL</label><input type="text" class="form-input text-gray-600" value="${p.img}" onchange="updatePlayer(${p.id}, 'img', this.value)"></div>
+                         <div class="col-span-12"><label class="form-label">Bio / Player Details</label><textarea class="form-input h-20 resize-y" onchange="updatePlayer(${p.id}, 'bio', this.value)">${p.bio || ""}</textarea></div>
+                    </div>
+                 </div>`).join('');
+
+            // News
+            document.getElementById('news-list').innerHTML = state.news.map(n => `
+                 <div class="bg-white rounded border border-gray-300 shadow-sm p-4 relative">
+                    <button onclick="removeNews(${n.id})" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 p-2"><i class="fa-solid fa-trash"></i></button>
+                    <div class="grid grid-cols-12 gap-4">
+                        <div class="col-span-12 md:col-span-3">
+                             <label class="form-label">Date</label>
+                             <input type="text" class="form-input" value="${n.date}" onchange="updateNews(${n.id}, 'date', this.value)" placeholder="Feb 1, 2026">
+                        </div>
+                        <div class="col-span-12 md:col-span-9">
+                             <label class="form-label">Headline</label>
+                             <input type="text" class="form-input font-bold" value="${n.title}" onchange="updateNews(${n.id}, 'title', this.value)">
+                        </div>
+                         <div class="col-span-12">
+                             <label class="form-label">Image URL</label>
+                             <input type="text" class="form-input text-gray-600" value="${n.image}" onchange="updateNews(${n.id}, 'image', this.value)">
+                        </div>
+                        <div class="col-span-12">
+                             <label class="form-label">Story Body / Summary</label>
+                             <textarea class="form-input h-32 resize-y" onchange="updateNews(${n.id}, 'summary', this.value)">${n.summary}</textarea>
+                        </div>
+                    </div>
+                 </div>`).join('');
+
+            // Games
+            document.getElementById('game-list').innerHTML = state.games.map(g => `
+                <div class="bg-white rounded border border-gray-300 shadow-sm p-4 relative group">
+                    <button onclick="removeGame(${g.id})" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 p-2"><i class="fa-solid fa-trash"></i></button>
+                    <div class="grid grid-cols-12 gap-4">
+                        <div class="col-span-12 md:col-span-8 grid grid-cols-12 gap-3">
+                            <div class="col-span-12 md:col-span-3"><label class="form-label">Date</label><input type="text" class="form-input" value="${g.date}" onchange="updateGame(${g.id}, 'date', this.value)"></div>
+                            <div class="col-span-12 md:col-span-3"><label class="form-label">Time</label><input type="text" class="form-input" value="${g.time}" onchange="updateGame(${g.id}, 'time', this.value)"></div>
+                            <div class="col-span-12 md:col-span-2"><label class="form-label">Site</label><select class="form-input" onchange="updateGame(${g.id}, 'atVs', this.value)"><option value="vs" ${g.atVs === 'vs' ? 'selected' : ''}>vs</option><option value="at" ${g.atVs === 'at' ? 'selected' : ''}>at</option></select></div>
+                            <div class="col-span-12 md:col-span-4"><label class="form-label">Location</label><input type="text" class="form-input" value="${g.location}" onchange="updateGame(${g.id}, 'location', this.value)"></div>
+                            <div class="col-span-12 md:col-span-5"><label class="form-label">Opponent</label><input type="text" class="form-input font-bold" value="${g.opponent}" onchange="updateGame(${g.id}, 'opponent', this.value)"></div>
+                             <div class="col-span-12 md:col-span-7"><label class="form-label">Logo URL</label><input type="text" class="form-input text-gray-600" value="${g.logo}" onchange="updateGame(${g.id}, 'logo', this.value)"></div>
+                            <div class="col-span-12 md:col-span-6"><label class="form-label">Promo</label><input type="text" class="form-input text-amber-600 font-bold" value="${g.promo}" onchange="updateGame(${g.id}, 'promo', this.value)"></div>
+                            <div class="col-span-12 md:col-span-6"><label class="form-label">Link</label><div class="flex gap-1"><input type="text" class="form-input w-1/3" value="${g.linkText}" onchange="updateGame(${g.id}, 'linkText', this.value)" placeholder="Txt"><input type="text" class="form-input w-2/3" value="${g.linkUrl}" onchange="updateGame(${g.id}, 'linkUrl', this.value)" placeholder="URL"></div></div>
+                        </div>
+                        <div class="col-span-12 md:col-span-4 bg-gray-50 rounded p-4 border border-gray-300">
+                             <div class="mb-4 text-center">
+                                <label class="form-label border-b border-gray-300 pb-2 mb-3">Final Score</label>
+                                <div class="flex items-center gap-2 justify-center">
+                                    <input type="text" class="form-input text-center font-bold w-16 text-lg" placeholder="WE" value="${g.scoreHome}" onchange="updateGame(${g.id}, 'scoreHome', this.value)">
+                                    <span class="text-gray-500 font-bold">-</span>
+                                    <input type="text" class="form-input text-center font-bold w-16 text-lg" placeholder="THEY" value="${g.scoreAway}" onchange="updateGame(${g.id}, 'scoreAway', this.value)">
+                                </div>
+                             </div>
+                             <div><label class="form-label">Game Recap</label><textarea class="form-input h-24 resize-y" onchange="updateGame(${g.id}, 'recap', this.value)">${g.recap}</textarea></div>
+                        </div>
+                    </div>
+                </div>`).join('');
+        }
+
+        // --- RENDER PREVIEW (Public Site Simulation) ---
+        function renderPreview() {
+            const container = document.getElementById('preview-content');
+            
+            // Render Detail View if active
+            if (previewDetail) {
+                if(previewDetail.type === 'player') {
+                    const p = state.players.find(x => x.id === previewDetail.id);
+                    if(!p) return closeDetail();
+                    container.innerHTML = `
+                        <div class="max-w-4xl mx-auto animate-fade-in">
+                            <button onclick="closeDetail()" class="theme-sub-text hover:opacity-75 font-bold uppercase text-sm mb-6 inline-flex items-center"><i class="fa-solid fa-arrow-left mr-2"></i> Back to Roster</button>
+                            <div class="theme-card rounded-lg overflow-hidden shadow-lg flex flex-col md:flex-row">
+                                <div class="w-full md:w-1/3 h-64 md:h-auto border-r theme-border bg-black bg-opacity-5 flex items-center justify-center overflow-hidden relative">
+                                    ${p.img ? `<img src="${p.img}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-6xl opacity-20"></i>`}
+                                    <div class="absolute bottom-0 right-0 theme-primary-bg theme-secondary-text font-condensed font-bold text-5xl px-4 py-2 border-t-4 theme-secondary-border border-l-4">#${p.num}</div>
+                                </div>
+                                <div class="p-8 w-full md:w-2/3">
+                                    <h2 class="font-condensed font-bold text-5xl uppercase mb-2 leading-none">${p.name}</h2>
+                                    <div class="flex gap-4 theme-sub-text font-bold uppercase tracking-wide border-b theme-border pb-4 mb-4">
+                                        <span>${p.pos}</span>&bull;<span>${p.yr}</span>&bull;<span>${p.ht}</span>
+                                    </div>
+                                    <div class="mb-6"><p class="theme-sub-text"><i class="fa-solid fa-location-dot mr-2"></i>${p.hometown}</p></div>
+                                    <div class="prose max-w-none">
+                                        <h3 class="font-bold text-lg mb-2">Player Profile</h3>
+                                        <p class="leading-relaxed opacity-90">${(p.bio || "No biography provided.").replace(/\n/g, '<br>')}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                } else if (previewDetail.type === 'game') {
+                    const g = state.games.find(x => x.id === previewDetail.id);
+                    if(!g) return closeDetail();
+                    const isHome = g.atVs === 'vs';
+                    let myScore = isHome ? g.scoreHome : g.scoreAway;
+                    let oppScore = isHome ? g.scoreAway : g.scoreHome;
+                    
+                    container.innerHTML = `
+                        <div class="max-w-4xl mx-auto animate-fade-in">
+                            <button onclick="closeDetail()" class="theme-sub-text hover:opacity-75 font-bold uppercase text-sm mb-6 inline-flex items-center"><i class="fa-solid fa-arrow-left mr-2"></i> Back to Schedule</button>
+                            <div class="theme-card rounded-lg overflow-hidden shadow-lg">
+                                <div class="theme-primary-bg theme-secondary-text p-8 text-center relative">
+                                    <h2 class="font-condensed font-bold text-3xl md:text-5xl uppercase mb-6 tracking-wide">${state.settings.name} vs ${g.opponent}</h2>
+                                    <div class="flex justify-center items-center gap-12 font-condensed font-bold text-6xl">
+                                        <div class="text-center"><span class="block text-sm font-sans font-normal opacity-75 mb-2">${state.settings.initials}</span>${myScore || '-'}</div>
+                                        <span class="opacity-50 text-4xl">-</span>
+                                        <div class="text-center"><span class="block text-sm font-sans font-normal opacity-75 mb-2">OPP</span>${oppScore || '-'}</div>
+                                    </div>
+                                </div>
+                                <div class="p-8">
+                                    <div class="border-b theme-border pb-4 mb-4 font-bold text-lg opacity-90">
+                                        ${g.date} &bull; ${g.location}
+                                    </div>
+                                    <div class="prose max-w-none leading-relaxed opacity-90">
+                                        ${(g.recap || "No recap provided yet.").replace(/\n/g, '<br>')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                } else if (previewDetail.type === 'news') {
+                    const n = state.news.find(x => x.id === previewDetail.id);
+                    if(!n) return closeDetail();
+                    container.innerHTML = `
+                        <div class="max-w-4xl mx-auto animate-fade-in">
+                            <button onclick="closeDetail()" class="theme-sub-text hover:opacity-75 font-bold uppercase text-sm mb-6 inline-flex items-center"><i class="fa-solid fa-arrow-left mr-2"></i> Back to News</button>
+                            <div class="theme-card rounded-lg overflow-hidden shadow-lg">
+                                ${n.image ? `<div class="h-64 md:h-96 w-full"><img src="${n.image}" class="w-full h-full object-cover"></div>` : ''}
+                                <div class="p-8">
+                                    <span class="theme-secondary-bg theme-primary-text px-3 py-1 text-sm font-bold uppercase mb-4 inline-block rounded">${n.date}</span>
+                                    <h1 class="font-condensed font-bold text-4xl md:text-5xl uppercase leading-tight mb-6">${n.title}</h1>
+                                    <div class="prose max-w-none text-lg leading-relaxed opacity-90">
+                                        ${n.summary.replace(/\n/g, '<br>')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+                return; // Stop rendering lists
+            }
+
+            // Render Lists based on current tab
+            if(previewTab === 'schedule') {
+                container.innerHTML = `
+                    <div class="theme-card shadow-sm rounded-t overflow-hidden max-w-6xl mx-auto">
+                        <div class="hidden md:grid grid-cols-12 bg-black bg-opacity-10 font-bold uppercase text-sm py-3 px-4 tracking-wider theme-border border-b">
+                            <div class="col-span-2">Date</div><div class="col-span-4">Opponent</div><div class="col-span-3">Location</div><div class="col-span-3 text-right">Time / Result</div>
+                        </div>
+                        <div>
+                            ${state.games.map((g, i) => {
+                                const isHome = g.atVs === 'vs';
+                                const bg = i % 2 === 0 ? 'bg-transparent' : 'bg-black bg-opacity-5';
+                                const hasScore = g.scoreHome && g.scoreAway;
+                                
+                                let timeResultDisplay = `<span class="text-base font-bold">${g.time}</span>`;
+                                if(hasScore) {
+                                    let myScore = isHome ? g.scoreHome : g.scoreAway;
+                                    let oppScore = isHome ? g.scoreAway : g.scoreHome;
+                                    let w_l = parseInt(myScore) > parseInt(oppScore) ? 'W' : 'L';
+                                    let color = w_l === 'W' ? 'text-green-500' : 'text-red-500'; // Hardcoded for contrast universally
+                                    timeResultDisplay = `<div class="flex flex-col items-end"><div><span class="${color} font-bold mr-2">${w_l}</span><span class="font-bold text-lg">${myScore}-${oppScore}</span></div>${g.recap ? `<span class="text-[10px] uppercase font-bold theme-primary-text mt-1">View Details</span>` : ''}</div>`;
+                                } else if(g.linkText && g.linkUrl) { 
+                                    timeResultDisplay += `<div class="mt-1"><a href="${g.linkUrl}" onclick="event.stopPropagation()" target="_blank" class="text-xs theme-primary-text uppercase font-bold hover:underline">${g.linkText}</a></div>`; 
+                                }
+                                
+                                return `<div onclick="viewDetail('game', ${g.id})" class="${bg} border-b theme-border md:grid grid-cols-12 items-center py-4 px-4 hover:bg-black hover:bg-opacity-10 transition-colors cursor-pointer">
+                                    <div class="col-span-2 font-medium text-sm md:text-base opacity-90">${g.date}</div>
+                                    <div class="col-span-4 flex items-center"><span class="mr-3 w-6 text-center text-xs font-bold uppercase opacity-50">${g.atVs}</span>${g.logo ? `<img src="${g.logo}" class="w-8 h-8 object-contain mr-4 bg-white rounded p-1">` : `<div class="w-8 h-8 rounded bg-black bg-opacity-10 mr-4 flex items-center justify-center opacity-50"><i class="fa-solid fa-shield"></i></div>`}<div class="flex flex-col"><span class="font-bold text-lg leading-tight">${g.opponent}</span>${g.promo ? `<span class="text-[10px] font-bold theme-secondary-text uppercase tracking-wide">${g.promo}</span>` : ''}</div></div>
+                                    <div class="col-span-3 text-sm opacity-80">${g.location}</div>
+                                    <div class="col-span-3 text-right flex flex-col items-end justify-center">${timeResultDisplay}</div></div>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
+            } else if(previewTab === 'roster') {
+                container.innerHTML = `
+                    <div class="theme-card shadow-sm rounded overflow-hidden max-w-6xl mx-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-black bg-opacity-10 font-condensed font-bold uppercase text-sm border-b theme-border">
+                                    <th class="py-3 px-4 w-16 text-center">No.</th><th class="py-3 px-4">Name</th><th class="py-3 px-4 w-16 text-center">Pos.</th><th class="py-3 px-4 w-16 text-center">Yr.</th><th class="py-3 px-4 w-24 text-center">Ht.</th><th class="py-3 px-4">Hometown</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${state.players.sort((a,b) => parseInt(a.num) - parseInt(b.num)).map((p, index) => {
+                                    const bg = index % 2 === 0 ? 'bg-transparent' : 'bg-black bg-opacity-5';
+                                    return `
+                                    <tr class="${bg} border-b theme-border hover:bg-black hover:bg-opacity-10 transition-colors cursor-pointer" onclick="viewDetail('player', ${p.id})">
+                                        <td class="py-4 px-4 text-center font-bold theme-secondary-text font-condensed text-xl">${p.num}</td>
+                                        <td class="py-4 px-4"><div class="flex items-center"><div class="w-12 h-12 rounded-full bg-black bg-opacity-10 overflow-hidden mr-4 border theme-border">${p.img ? `<img src="${p.img}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center opacity-30"><i class="fa-solid fa-user"></i></div>`}</div><span class="font-bold uppercase font-condensed text-xl">${p.name}</span></div></td>
+                                        <td class="py-4 px-4 text-center font-medium opacity-80">${p.pos}</td>
+                                        <td class="py-4 px-4 text-center opacity-80">${p.yr}</td>
+                                        <td class="py-4 px-4 text-center opacity-80">${p.ht}</td>
+                                        <td class="py-4 px-4 opacity-80 text-sm">${p.hometown.split('/')[0]}</td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>`;
+            } else if(previewTab === 'news') {
+                container.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                        ${state.news.map(n => `
+                            <div class="theme-card rounded shadow-sm overflow-hidden group hover:shadow-lg transition-all cursor-pointer border theme-border" onclick="viewDetail('news', ${n.id})">
+                                <div class="h-48 bg-black bg-opacity-10 overflow-hidden relative">
+                                    ${n.image ? `<img src="${n.image}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">` : `<div class="w-full h-full flex items-center justify-center opacity-30"><i class="fa-solid fa-newspaper text-4xl"></i></div>`}
+                                    <div class="absolute bottom-0 left-0 theme-secondary-bg theme-primary-text text-xs font-bold uppercase px-3 py-1">${n.date}</div>
+                                </div>
+                                <div class="p-6">
+                                    <h3 class="font-condensed font-bold text-2xl uppercase leading-tight mb-3 group-hover:underline">${n.title}</h3>
+                                    <p class="opacity-80 text-sm line-clamp-3 mb-4">${n.summary}</p>
+                                    <span class="inline-block text-xs font-bold uppercase theme-primary-text">Read More <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>`;
+            }
+        }
+
+        // --- SAVE/LOAD ---
+        function saveData() {
+            const dataStr = JSON.stringify(state, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "team_admin_data.json";
+            document.body.appendChild(link);
+            link.click();
+        }
+        function loadData(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const loaded = JSON.parse(e.target.result);
+                    if(loaded.settings) { state.settings = loaded.settings; updateSettingsUI(); applyTheme(); }
+                    if(loaded.games) state.games = loaded.games;
+                    if(loaded.players) state.players = loaded.players;
+                    if(loaded.news) state.news = loaded.news;
+                    renderEditor();
+                    if(isPreview) renderPreview();
+                    alert("Data loaded successfully.");
+                } catch(err) { alert("Error reading file."); }
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
