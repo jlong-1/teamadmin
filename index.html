@@ -135,6 +135,14 @@
                 </div>
                 
                 <div class="bg-white p-6 rounded shadow border border-gray-300 space-y-6">
+                    <div class="p-4 bg-gray-100 rounded border border-gray-300 mb-6">
+                        <label class="form-label text-gray-900">Auto-Import MCLA Team</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="mcla_team_input" class="form-input w-64 border-gray-400" placeholder="e.g. clemson or florida-state">
+                            <button onclick="fetchMclaData()" class="bg-gray-800 hover:bg-black text-white px-4 py-2 rounded font-bold text-sm transition-transform active:scale-95">Import Data</button>
+                        </div>
+                        <span id="import-status" class="text-xs text-gray-500 mt-2 block"></span>
+                    </div>
                     <div class="grid grid-cols-2 gap-6">
                         <div class="col-span-2 md:col-span-1">
                             <label class="form-label">Team Name / Sport</label>
@@ -735,6 +743,48 @@
             };
             reader.readAsText(file);
         }
+        // --- MCLA AUTO-IMPORT ---
+        async function fetchMclaData() {
+            const rawInput = document.getElementById('mcla_team_input').value.toLowerCase().trim();
+            const teamName = rawInput.replace(/\s+/g, '-'); 
+            const statusText = document.getElementById('import-status');
+            
+            if(!teamName) {
+                statusText.innerText = "Please enter a team name.";
+                statusText.className = "text-xs text-red-600 font-bold mt-2 block";
+                return;
+            }
+
+            statusText.innerText = "Scraping MCLA... please wait.";
+            statusText.className = "text-xs text-blue-600 font-bold mt-2 block";
+            
+            try {
+                const response = await fetch(`/api/scrapeTeam?team=${teamName}`);
+                
+                if (!response.ok) throw new Error("Could not fetch data");
+                
+                const newData = await response.json();
+                
+                state.settings.name = newData.settings.name;
+                state.settings.initials = newData.settings.initials;
+                state.players = newData.players;
+                state.games = newData.games;
+                
+                updateSettingsUI();
+                renderEditor();
+                if(isPreview) renderPreview();
+                
+                statusText.innerText = "Import successful!";
+                statusText.className = "text-xs text-green-600 font-bold mt-2 block";
+                
+            } catch (error) {
+                statusText.innerText = "Error: Could not find team or scrape failed. Check spelling.";
+                statusText.className = "text-xs text-red-600 font-bold mt-2 block";
+            }
+        }
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
